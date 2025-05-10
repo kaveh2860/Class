@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدیریت پیشرفته کلاس خصوصی</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"> <link rel="stylesheet" href="style.css">
+    <meta name="description" content="نرم افزار مدیریت کلاس های خصوصی با قابلیت ذخیره سازی پیشرفته IndexedDB و پشتیبان گیری">
+    <link rel="icon" href="/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png"> <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#2b3035" media="(prefers-color-scheme: dark)"> </head>
+
+<body class="preload"> <div class="app-container">
+        <header class="app-header">
+            <h1><i class="fas fa-chalkboard-teacher"></i> مدیریت کلاس خصوصی</h1>
+            <div class="header-actions">
+                <button id="themeToggleBtn" class="icon-btn" title="تغییر تم روشن/تاریک" aria-label="تغییر تم">
+                    <i class="fas fa-sun"></i> </button>
+                <button id="exportDataBtn" class="icon-btn" title="خروجی گرفتن از داده‌ها (پشتیبان‌گیری)" aria-label="پشتیبان‌گیری">
+                    <i class="fas fa-file-export"></i>
+                </button>
+                <label for="importDataInput" class="icon-btn import-label" title="وارد کردن داده‌ها از فایل پشتیبان" aria-label="وارد کردن پشتیبان">
+                    <i class="fas fa-file-import"></i>
+                    <input type="file" id="importDataInput" accept=".json,application/json" style="display: none;">
+                </label>
+                 <button id="settingsBtn" class="icon-btn" title="تنظیمات برنامه" aria-label="تنظیمات">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="page active" id="page1">
+                <div class="container page-container">
+                    <h2><i class="fas fa-users"></i> دانش آموزان و گروه ها</h2>
+                    <form id="addStudentForm" class="input-group">
+                        <label for="nameInput" class="sr-only">نام جدید دانش آموز یا گروه</label>
+                        <input type="text" id="nameInput" placeholder="نام جدید (یا گروهی: علی و رضا)" aria-label="نام جدید دانش آموز یا گروه" required/>
+                        <button type="submit" id="addNameBtn" class="primary-btn">
+                            <i class="fas fa-plus"></i> افزودن
+                        </button>
+                    </form>
+                    <div class="search-filter-container">
+                        <div class="search-box">
+                             <label for="searchInput" class="sr-only">جستجو</label>
+                            <input type="text" id="searchInput" placeholder="جستجو در نام‌ها..." aria-label="جستجو در نام ها" />
+                            <i class="fas fa-search"></i>
+                        </div>
+                        </div>
+                    <div class="list-container" id="nameList" aria-live="polite">
+                         <div class="empty-list-placeholder active" id="nameListEmpty">
+                            <i class="fas fa-user-graduate fa-3x"></i>
+                            <p>هنوز دانش آموز یا گروهی ثبت نشده است.</p>
+                        </div>
+                        </div>
+                </div>
+            </div>
+
+            <div class="page" id="page2">
+                <div class="container page-container">
+                    <div class="page-header">
+                        <div class="student-info">
+                            <strong aria-live="polite"><i class="fas fa-user"></i> دانش‌آموز/گروه: <span id="selectedName"></span></strong>
+                            <small id="lastActivityDate" class="last-activity">آخرین فعالیت: --</small>
+                        </div>
+                        <button class="secondary-btn" id="backBtn">
+                            <i class="fas fa-arrow-right"></i> بازگشت به لیست
+                        </button>
+                    </div>
+
+                    <div class="student-list" id="studentList" aria-label="اعضای گروه">
+                        </div>
+
+                    <nav class="tabs" role="tablist" aria-label="بخش های اطلاعات دانش آموز">
+                        <button id="tabBtnClass" class="tab-button active" role="tab" aria-selected="true" aria-controls="classPanel">
+                            <i class="fas fa-chalkboard-user"></i> کلاس‌ها
+                        </button>
+                        <button id="tabBtnCost" class="tab-button" role="tab" aria-selected="false" aria-controls="costPanel">
+                            <i class="fas fa-receipt"></i> پرداخت‌ها
+                        </button>
+                        <button id="tabBtnReport" class="tab-button" role="tab" aria-selected="false" aria-controls="reportPanel">
+                            <i class="fas fa-chart-pie"></i> گزارش مالی
+                        </button>
+                    </nav>
+
+                    <div id="classPanel" class="tab-content active" role="tabpanel" aria-labelledby="tabBtnClass">
+                        <h3><i class="fas fa-calendar-plus"></i> ثبت کلاس جدید</h3>
+                        <form id="addClassForm" class="data-form">
+                            <fieldset class="checkbox-group">
+                                <legend>ثبت برای دانش‌آموز(ان)</legend>
+                                <div id="classStudentCheckboxes" class="checkbox-options">
+                                    <p class="placeholder">ابتدا یک دانش آموز را از لیست انتخاب کنید.</p>
+                                </div>
+                            </fieldset>
+                            <div class="input-group form-grid">
+                                <div>
+                                    <label for="classDate">تاریخ کلاس:</label>
+                                    <input type="date" id="classDate" title="تاریخ کلاس" required aria-label="تاریخ کلاس" />
+                                </div>
+                                 <div>
+                                    <label for="classDay">روز هفته:</label>
+                                    <select id="classDay" title="روز هفته" required aria-label="روز هفته">
+                                        <option value="" disabled selected>انتخاب کنید...</option>
+                                        <option value="شنبه">شنبه</option>
+                                        <option value="یکشنبه">یکشنبه</option>
+                                        <option value="دوشنبه">دوشنبه</option>
+                                        <option value="سه‌شنبه">سه‌شنبه</option>
+                                        <option value="چهارشنبه">چهارشنبه</option>
+                                        <option value="پنجشنبه">پنجشنبه</option>
+                                        <option value="جمعه">جمعه</option>
+                                    </select>
+                                 </div>
+                                 <div>
+                                     <label for="classCost">هزینه (تومان):</label>
+                                    <input type="number" id="classCost" placeholder="هزینه کلاس" title="هزینه کلاس (تومان)"
+                                        inputmode="numeric" min="0" required aria-label="هزینه کلاس"/>
+                                 </div>
+                                 <div class="full-width">
+                                     <label for="classNotes">یادداشت (اختیاری):</label>
+                                     <textarea id="classNotes" placeholder="جزئیات جلسه، تکلیف و..." title="یادداشت برای این کلاس" aria-label="یادداشت کلاس" rows="2"></textarea>
+                                 </div>
+                                 <div class="full-width form-actions">
+                                    <button type="submit" id="addClassBtn" class="primary-btn">
+                                        <i class="fas fa-save"></i> ثبت کلاس
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <hr class="section-divider">
+
+                        <h4><i class="fas fa-list-ul"></i> لیست کلاس‌های ثبت شده</h4>
+                         <div class="table-controls">
+                            <button id="bulkDeleteClassesBtn" class="danger-btn" disabled><i class="fas fa-trash-alt"></i> حذف انتخاب شده ها</button>
+                            <div class="date-filter">
+                                <label for="classFilterStartDate">نمایش از:</label>
+                                <input type="date" id="classFilterStartDate" aria-label="تاریخ شروع فیلتر کلاس">
+                                <label for="classFilterEndDate">تا:</label>
+                                <input type="date" id="classFilterEndDate" aria-label="تاریخ پایان فیلتر کلاس">
+                                <button id="applyClassFilterBtn" class="secondary-btn icon-btn" title="اعمال فیلتر"><i class="fas fa-filter"></i></button>
+                                <button id="clearClassFilterBtn" class="icon-btn" title="پاک کردن فیلتر"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                        <div class="table-container scrollable">
+                            <table id="classTable" class="data-table" aria-label="لیست کلاس ها">
+                                <thead>
+                                    <tr>
+                                        <th class="checkbox-col"><input type="checkbox" id="selectAllClasses" title="انتخاب همه/هیچکدام" aria-label="انتخاب همه کلاس ها"></th>
+                                        <th class="sortable" data-sort="studentName">دانش‌آموز <i class="fas fa-sort"></i></th>
+                                        <th class="sortable" data-sort="day">روز <i class="fas fa-sort"></i></th>
+                                        <th class="sortable" data-sort="date">تاریخ <i class="fas fa-sort"></i></th>
+                                        <th class="sortable numeric" data-sort="cost">هزینه <i class="fas fa-sort"></i></th>
+                                        <th>یادداشت</th>
+                                        <th class="actions-col">عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="classList">
+                                    </tbody>
+                            </table>
+                             <div class="empty-list-placeholder active" id="classListEmpty">
+                                <i class="fas fa-calendar-times fa-3x"></i>
+                                <p>هنوز کلاسی ثبت نشده یا با فیلتر انتخابی مطابقت ندارد.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="costPanel" class="tab-content" role="tabpanel" aria-labelledby="tabBtnCost">
+                        <h3><i class="fas fa-money-check-alt"></i> ثبت پرداخت جدید</h3>
+                         <form id="addPaymentForm" class="data-form">
+                            <fieldset class="checkbox-group">
+                                <legend>ثبت برای دانش‌آموز(ان)</legend>
+                                <div id="costStudentCheckboxes" class="checkbox-options">
+                                     <p class="placeholder">ابتدا یک دانش آموز را از لیست انتخاب کنید.</p>
+                                </div>
+                            </fieldset>
+                            <div class="input-group form-grid">
+                                 <div>
+                                    <label for="paymentDate">تاریخ پرداخت:</label>
+                                    <input type="date" id="paymentDate" title="تاریخ پرداخت" required aria-label="تاریخ پرداخت"/>
+                                 </div>
+                                 <div>
+                                    <label for="paymentDay">روز هفته:</label>
+                                    <select id="paymentDay" title="روز هفته" required aria-label="روز هفته">
+                                        <option value="" disabled selected>انتخاب کنید...</option>
+                                        <option value="شنبه">شنبه</option>
+                                        <option value="یکشنبه">یکشنبه</option>
+                                        <option value="دوشنبه">دوشنبه</option>
+                                        <option value="سه‌شنبه">سه‌شنبه</option>
+                                        <option value="چهارشنبه">چهارشنبه</option>
+                                        <option value="پنجشنبه">پنجشنبه</option>
+                                        <option value="جمعه">جمعه</option>
+                                    </select>
+                                 </div>
+                                 <div>
+                                    <label for="paymentAmount">مبلغ (تومان):</label>
+                                    <input type="number" id="paymentAmount" placeholder="مبلغ پرداختی" title="مبلغ پرداختی (تومان)"
+                                        inputmode="numeric" min="1" required aria-label="مبلغ پرداختی"/>
+                                 </div>
+                                 <div class="full-width">
+                                     <label for="paymentNotes">یادداشت (اختیاری):</label>
+                                     <textarea id="paymentNotes" placeholder="بابت..., شماره پیگیری و..." title="یادداشت برای این پرداخت" aria-label="یادداشت پرداخت" rows="2"></textarea>
+                                 </div>
+                                 <div class="full-width form-actions">
+                                    <button type="submit" id="addPaymentBtn" class="primary-btn">
+                                        <i class="fas fa-save"></i> ثبت پرداخت
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                         <hr class="section-divider">
+
+                        <h4><i class="fas fa-list-ul"></i> لیست پرداخت‌های ثبت شده</h4>
+                         <div class="table-controls">
+                             <button id="bulkDeletePaymentsBtn" class="danger-btn" disabled><i class="fas fa-trash-alt"></i> حذف انتخاب شده ها</button>
+                             <div class="date-filter">
+                                <label for="paymentFilterStartDate">نمایش از:</label>
+                                <input type="date" id="paymentFilterStartDate" aria-label="تاریخ شروع فیلتر پرداخت">
+                                <label for="paymentFilterEndDate">تا:</label>
+                                <input type="date" id="paymentFilterEndDate" aria-label="تاریخ پایان فیلتر پرداخت">
+                                <button id="applyPaymentFilterBtn" class="secondary-btn icon-btn" title="اعمال فیلتر"><i class="fas fa-filter"></i></button>
+                                <button id="clearPaymentFilterBtn" class="icon-btn" title="پاک کردن فیلتر"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                         <div class="table-container scrollable">
+                            <table id="paymentTable" class="data-table" aria-label="لیست پرداخت ها">
+                                <thead>
+                                    <tr>
+                                        <th class="checkbox-col"><input type="checkbox" id="selectAllPayments" title="انتخاب همه/هیچکدام" aria-label="انتخاب همه پرداخت ها"></th>
+                                        <th class="sortable" data-sort="studentName">دانش‌آموز <i class="fas fa-sort"></i></th>
+                                        <th class="sortable" data-sort="day">روز <i class="fas fa-sort"></i></th>
+                                        <th class="sortable" data-sort="date">تاریخ <i class="fas fa-sort"></i></th>
+                                        <th class="sortable numeric" data-sort="amount">مبلغ <i class="fas fa-sort"></i></th>
+                                        <th>یادداشت</th>
+                                        <th class="actions-col">عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="paymentList">
+                                    </tbody>
+                            </table>
+                              <div class="empty-list-placeholder active" id="paymentListEmpty">
+                                <i class="fas fa-file-invoice-dollar fa-3x"></i>
+                                <p>هنوز پرداختی ثبت نشده یا با فیلتر انتخابی مطابقت ندارد.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="reportPanel" class="tab-content" role="tabpanel" aria-labelledby="tabBtnReport">
+                        <h3><i class="fas fa-calculator"></i> گزارش مالی</h3>
+                         <div class="report-controls date-filter">
+                                <label for="reportFilterStartDate">گزارش از تاریخ:</label>
+                                <input type="date" id="reportFilterStartDate" aria-label="تاریخ شروع گزارش">
+                                <label for="reportFilterEndDate">تا تاریخ:</label>
+                                <input type="date" id="reportFilterEndDate" aria-label="تاریخ پایان گزارش">
+                                <button id="applyReportFilterBtn" class="primary-btn"><i class="fas fa-filter"></i> نمایش گزارش</button>
+                                <button id="clearReportFilterBtn" class="secondary-btn icon-btn" title="پاک کردن فیلتر"><i class="fas fa-times"></i></button>
+                        </div>
+                         <div class="table-container scrollable">
+                            <table id="reportTable" class="data-table report-table" aria-label="گزارش مالی">
+                                <thead>
+                                    <tr>
+                                        <th>دانش‌آموز</th>
+                                        <th>نوع</th>
+                                        <th>روز</th>
+                                        <th>تاریخ</th>
+                                        <th class="numeric">هزینه کلاس</th>
+                                        <th class="numeric">مبلغ پرداختی</th>
+                                        <th>یادداشت</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportTableBody">
+                                    </tbody>
+                                <tfoot id="reportTableFooter">
+                                    </tfoot>
+                            </table>
+                             <div class="empty-list-placeholder active" id="reportTableEmpty">
+                                <i class="fas fa-folder-open fa-3x"></i>
+                                <p>داده‌ای برای نمایش در گزارش (با فیلتر انتخابی) وجود ندارد.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div> </div> </main>
+
+    </div> <div class="dialog" id="deleteDialog" role="alertdialog" aria-modal="true" aria-labelledby="deleteDialogTitle">
+        <h4 id="deleteDialogTitle" class="dialog-title danger"><i class="fas fa-exclamation-triangle"></i> تأیید حذف</h4>
+        <p id="deleteDialogMessage"></p>
+        <div class="dialog-buttons">
+            <button class="danger-btn" id="confirmDeleteBtn">
+                <i class="fas fa-trash-alt"></i> بله، حذف کن
+            </button>
+            <button class="secondary-btn" id="cancelDeleteBtn">
+                <i class="fas fa-times"></i> لغو
+            </button>
+        </div>
+    </div>
+
+    <div class="dialog" id="editStudentDialog" role="dialog" aria-modal="true" aria-labelledby="editStudentDialogTitle">
+         <h4 id="editStudentDialogTitle" class="dialog-title info"><i class="fas fa-edit"></i> ویرایش نام دانش‌آموز/گروه</h4>
+         <form id="editStudentForm">
+            <div class="form-group">
+                 <label for="editStudentNameInput">نام جدید:</label>
+                <input type="text" id="editStudentNameInput" placeholder="نام جدید" required aria-label="نام جدید"/>
+            </div>
+            <div class="dialog-buttons">
+                <button type="submit" class="primary-btn" id="confirmEditStudentBtn">
+                    <i class="fas fa-check"></i> تأیید
+                </button>
+                <button type="button" class="secondary-btn" id="cancelEditStudentBtn">
+                    <i class="fas fa-times"></i> لغو
+                </button>
+            </div>
+         </form>
+    </div>
+
+    <div class="dialog" id="editEntryDialog" role="dialog" aria-modal="true" aria-labelledby="editEntryDialogTitle">
+        <h4 id="editEntryDialogTitle" class="dialog-title info"><i class="fas fa-edit"></i> ویرایش رکورد</h4>
+        <form id="editEntryForm">
+            <input type="hidden" id="editEntryType"> <input type="hidden" id="editEntryId">   <div class="input-group form-grid">
+                <div>
+                    <label for="editEntryDate">تاریخ:</label>
+                    <input type="date" id="editEntryDate" title="تاریخ" required aria-label="تاریخ"/>
+                </div>
+                 <div>
+                    <label for="editEntryDay">روز:</label>
+                    <select id="editEntryDay" title="روز هفته" required>
+                        <option value="شنبه">شنبه</option>
+                        <option value="یکشنبه">یکشنبه</option>
+                        <option value="دوشنبه">دوشنبه</option>
+                        <option value="سه‌شنبه">سه‌شنبه</option>
+                        <option value="چهارشنبه">چهارشنبه</option>
+                        <option value="پنجشنبه">پنجشنبه</option>
+                        <option value="جمعه">جمعه</option>
+                    </select>
+                </div>
+                <div class="full-width">
+                    <label id="editEntryValueLabel" for="editEntryValue">مقدار:</label>
+                    <input type="number" id="editEntryValue" placeholder="" inputmode="numeric" required aria-label="مقدار"/>
+                </div>
+                 <div class="full-width">
+                     <label for="editEntryNotes">یادداشت (اختیاری):</label>
+                     <textarea id="editEntryNotes" placeholder="یادداشت..." title="یادداشت" aria-label="یادداشت" rows="2"></textarea>
+                 </div>
+            </div>
+            <div class="dialog-buttons">
+                <button type="submit" class="primary-btn" id="confirmEditEntryBtn">
+                    <i class="fas fa-check"></i> تأیید ویرایش
+                </button>
+                <button type="button" class="secondary-btn" id="cancelEditEntryBtn">
+                    <i class="fas fa-times"></i> لغو
+                </button>
+            </div>
+        </form>
+    </div>
+
+     <div class="dialog" id="settingsDialog" role="dialog" aria-modal="true" aria-labelledby="settingsDialogTitle">
+        <h4 id="settingsDialogTitle" class="dialog-title"><i class="fas fa-cog"></i> تنظیمات</h4>
+        <form id="settingsForm">
+            <div class="form-group setting-item">
+                <label for="defaultClassCost">هزینه پیش‌فرض کلاس (تومان):</label>
+                <input type="number" id="defaultClassCost" min="0" inputmode="numeric" placeholder="مثلا 150000">
+            </div>
+            <p class="info-text"><i class="fas fa-info-circle"></i> این تنظیمات در حافظه مرورگر شما ذخیره می‌شود.</p>
+        </form>
+         <div class="dialog-buttons">
+                <button type="button" class="primary-btn" id="saveSettingsBtn">
+                    <i class="fas fa-save"></i> ذخیره تنظیمات
+                </button>
+                <button type="button" class="secondary-btn" id="cancelSettingsBtn">
+                    <i class="fas fa-times"></i> بستن
+                </button>
+            </div>
+    </div>
+
+    <div class="dialog" id="errorDialog" role="alertdialog" aria-modal="true" aria-labelledby="errorDialogTitle">
+         <h4 id="errorDialogTitle" class="dialog-title danger"><i class="fas fa-exclamation-circle"></i> خطا</h4>
+        <p id="errorDialogMessage"></p>
+        <div class="dialog-buttons">
+            <button class="primary-btn" id="closeErrorBtn">
+                <i class="fas fa-check"></i> متوجه شدم
+            </button>
+        </div>
+    </div>
+
+     <div class="dialog" id="importConfirmDialog" role="alertdialog" aria-modal="true" aria-labelledby="importConfirmDialogTitle">
+         <h4 id="importConfirmDialogTitle" class="dialog-title warning"><i class="fas fa-exclamation-triangle"></i> تأیید وارد کردن اطلاعات</h4>
+        <p id="importConfirmMessage">آیا مطمئن هستید؟ وارد کردن اطلاعات از فایل پشتیبان، تمام اطلاعات فعلی موجود در برنامه را **حذف** و اطلاعات فایل پشتیبان را جایگزین آن‌ها خواهد کرد.</p>
+        <div id="importSummary" class="import-summary"></div>
+        <div class="dialog-buttons">
+             <button class="primary-btn" id="confirmImportBtn">
+                <i class="fas fa-check"></i> بله، وارد کن
+            </button>
+            <button class="secondary-btn" id="cancelImportBtn">
+                <i class="fas fa-times"></i> لغو
+            </button>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay" aria-hidden="true"></div>
+
+    <div id="toastNotification" class="toast" role="status" aria-live="assertive" aria-atomic="true">
+        <span id="toastMessage"></span>
+        <button id="toastCloseBtn" class="icon-btn toast-close" aria-label="بستن پیام">&times;</button>
+    </div>
+
+    <div id="loadingIndicator" class="loading-indicator" role="alert" aria-live="assertive" aria-busy="true">
+        <div class="spinner" aria-hidden="true"></div>
+        <span>در حال پردازش...</span>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="script.js" defer></script>
+</body>
+
+</html>
